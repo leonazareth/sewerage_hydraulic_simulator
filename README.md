@@ -1,6 +1,6 @@
 # Simulador de Cálculos Hidráulicos — Redes de Esgoto
 
-🌐 **[Acesse o simulador online](https://leo-nazareth.github.io/sewerage_hydraulic_simulator/)**
+🌐 **[Acesse o simulador online](https://leonazareth.github.io/sewerage_hydraulic_simulator/)**
 
 Este projeto oferece um simulador interativo voltado para fins educacionais, pensado para apoiar estudantes, docentes e profissionais no entendimento de cálculos hidráulicos aplicados a redes de esgoto.
 
