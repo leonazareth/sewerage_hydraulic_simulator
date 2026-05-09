@@ -110,6 +110,29 @@
     "overflow": "Tubulação sem capacidade",
     "overflowDesc": "A vazão de projeto excede a capacidade da tubulação"
   },
+  "table": {
+    "title": "Tabela de Capacidades",
+    "description": "Capacidade do trecho por diâmetro adotado",
+    "actions": {
+      "reachMax": "Lâmina máx",
+      "addCurrent": "Adicionar à tabela",
+      "copy": "Copiar TSV",
+      "copied": "Copiado!",
+      "clear": "Limpar tabela"
+    },
+    "headers": {
+      "dn": "DN",
+      "slope": "i",
+      "residences": "Residências",
+      "population": "População",
+      "flow": "Vazão",
+      "remove": "Remover linha"
+    },
+    "empty": "Nenhuma linha tabulada. Use os botões acima da seção da tubulação para adicionar.",
+    "cantTarget": "Não é possível atingir o limite com este diâmetro e declividade. Aumente o diâmetro ou a declividade.",
+    "confirmReplace": "Já existe uma linha com este DN e declividade. Substituir?",
+    "confirmClear": "Tem certeza que deseja limpar toda a tabela?"
+  },
   "footer": {
     "copyleft": "Copyleft © 2025 Pery Nazareth & Leonardo Nazareth. Este material pode ser livremente reproduzido e distribuído para fins educacionais, desde que a autoria seja atribuída.",
     "disclaimer": "Os autores não se responsabilizam pelo uso indevido das informações ou resultados gerados por este simulador. Os cálculos apresentados têm finalidade didática e não substituem a análise de um profissional habilitado."

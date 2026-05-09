@@ -110,6 +110,29 @@
     "overflow": "Tubería sin capacidad",
     "overflowDesc": "El caudal de diseño excede la capacidad de la tubería"
   },
+  "table": {
+    "title": "Tabla de Capacidades",
+    "description": "Capacidad del tramo por diámetro adoptado",
+    "actions": {
+      "reachMax": "Tirante máx",
+      "addCurrent": "Agregar a la tabla",
+      "copy": "Copiar TSV",
+      "copied": "¡Copiado!",
+      "clear": "Vaciar tabla"
+    },
+    "headers": {
+      "dn": "DN",
+      "slope": "i",
+      "residences": "Residencias",
+      "population": "Población",
+      "flow": "Caudal",
+      "remove": "Eliminar fila"
+    },
+    "empty": "Ninguna fila tabulada. Use los botones encima de la sección de la tubería para agregar.",
+    "cantTarget": "No es posible alcanzar el límite con este diámetro y pendiente. Aumente el diámetro o la pendiente.",
+    "confirmReplace": "Ya existe una fila con este DN y pendiente. ¿Reemplazar?",
+    "confirmClear": "¿Está seguro de que desea vaciar toda la tabla?"
+  },
   "footer": {
     "copyleft": "Copyleft © 2025 Pery Nazareth & Leonardo Nazareth. Este material puede ser reproducido y distribuido libremente con fines educativos, siempre que se atribuya la autoría.",
     "disclaimer": "Los autores no se responsabilizan por el uso indebido de la información o los resultados generados por este simulador. Los cálculos presentados tienen finalidad didáctica y no sustituyen el análisis de un profesional habilitado."

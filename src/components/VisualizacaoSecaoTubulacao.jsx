@@ -13,7 +13,7 @@ const COLORS = {
   errBg: '#FDEDF2',
 }
 
-const VisualizacaoSecaoTubulacao = ({ resultados, parametros }) => {
+const VisualizacaoSecaoTubulacao = ({ resultados, parametros, actions }) => {
   const { t } = useLanguage();
 
   if (!resultados) return null
@@ -105,13 +105,12 @@ const VisualizacaoSecaoTubulacao = ({ resultados, parametros }) => {
         </h2>
         <p className="text-xs mt-1.5" style={{ color: COLORS.ink3 }}>{t('visualization.section.description')}</p>
       </header>
-      <div className="flex-1 flex flex-col">
+      <div className="flex-1 flex flex-col mx-auto w-full" style={{ maxWidth: 472 }}>
         <div className="w-full">
           <svg
             viewBox={`0 0 ${svgWidth} ${svgHeight}`}
             preserveAspectRatio="xMidYMid meet"
             className="w-full h-auto"
-            style={{ maxHeight: '360px' }}
           >
             <defs>
               <marker id="arrowhead" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
@@ -432,6 +431,9 @@ const VisualizacaoSecaoTubulacao = ({ resultados, parametros }) => {
           </svg>
         </div>
         
+        {/* Ações: atingir meta + adicionar à tabela */}
+        {actions && <div className="mt-4">{actions}</div>}
+
         {/* Legenda — empurrada para baixo */}
         <div className="mt-auto pt-4 flex flex-wrap gap-x-5 gap-y-2 text-xs" style={{ color: COLORS.ink3 }}>
           <div className="flex items-center gap-2">

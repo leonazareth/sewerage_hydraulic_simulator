@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Input } from '@/components/ui/input.jsx'
 import { Label } from '@/components/ui/label.jsx'
-import { AlertCircle, CheckCircle, Droplet, Users, Home } from 'lucide-react'
+import { AlertCircle, CheckCircle, Droplet, Users, Home, Target, Plus, Copy, Trash2, X } from 'lucide-react'
 import VisualizacaoSecaoTubulacao from '@/components/VisualizacaoSecaoTubulacao.jsx'
 import VisualizacaoPerfilRede from '@/components/VisualizacaoPerfilRede.jsx'
 import { CalculosHidraulicos } from '@/lib/calculos_hidraulicos.js'
@@ -153,6 +153,8 @@ function App() {
 
   const [resultados, setResultados] = useState(null)
   const [calculadora] = useState(new CalculosHidraulicos())
+  const [tabela, setTabela] = useState([])
+  const [copiedFlash, setCopiedFlash] = useState(false)
 
   useEffect(() => {
     try {
@@ -173,6 +175,86 @@ function App() {
   const exibirValor = (valor, isDecimal = false) => {
     if (valor === 0 && !isDecimal) return ''
     return valor
+  }
+
+  // ─── Tabela de capacidades ──────────────────────────────────────
+  const adicionarLinha = (linha) => {
+    const dup = tabela.find(
+      r => r.diametro === linha.diametro && Math.abs(r.declividade - linha.declividade) < 1e-9
+    )
+    if (dup) {
+      if (!window.confirm(t('table.confirmReplace'))) return
+      setTabela(prev =>
+        prev
+          .filter(r => r.id !== dup.id)
+          .concat(linha)
+          .sort((a, b) => a.diametro - b.diametro || a.declividade - b.declividade)
+      )
+    } else {
+      setTabela(prev =>
+        [...prev, linha].sort((a, b) => a.diametro - b.diametro || a.declividade - b.declividade)
+      )
+    }
+  }
+
+  const handleAtingirMeta = () => {
+    const cap = calculadora.encontrarCapacidade(parametros)
+    if (!cap) {
+      window.alert(t('table.cantTarget'))
+      return
+    }
+    setParametros(prev => ({ ...prev, qtdeResidencias: cap.residencias }))
+  }
+
+  const handleAdicionarAtual = () => {
+    if (!resultados) return
+    adicionarLinha({
+      id: Date.now(),
+      diametro: parametros.diametro,
+      declividade: parametros.declividade,
+      residencias: parametros.qtdeResidencias,
+      populacao: parametros.qtdeResidencias * parametros.taxaOcupacao,
+      vazao: resultados.resultados.vazaoCalculada,
+    })
+  }
+
+  const handleRemoverLinha = (id) => {
+    setTabela(prev => prev.filter(r => r.id !== id))
+  }
+
+  const handleLimparTabela = () => {
+    if (tabela.length === 0) return
+    if (!window.confirm(t('table.confirmClear'))) return
+    setTabela([])
+  }
+
+  const handleCopiarTSV = async () => {
+    const headers = [
+      `${t('table.headers.dn')} (mm)`,
+      `${t('table.headers.slope')} (m/m)`,
+      t('table.headers.residences'),
+      t('table.headers.population'),
+      `${t('table.headers.flow')} (l/s)`,
+    ].join('\t')
+    const rows = tabela
+      .map(r =>
+        [
+          r.diametro,
+          r.declividade.toFixed(4),
+          r.residencias,
+          r.populacao.toFixed(2),
+          r.vazao.toFixed(2),
+        ].join('\t')
+      )
+      .join('\n')
+    const tsv = headers + '\n' + rows
+    try {
+      await navigator.clipboard.writeText(tsv)
+      setCopiedFlash(true)
+      setTimeout(() => setCopiedFlash(false), 1600)
+    } catch (e) {
+      console.error('Falha ao copiar:', e)
+    }
   }
 
   return (
@@ -405,7 +487,48 @@ function App() {
           <div className="lg:col-span-9 flex flex-col gap-6 xl:gap-8">
             <div className="grid grid-cols-1 xl:grid-cols-11 gap-6 xl:gap-8">
               <div className="xl:col-span-6">
-                <VisualizacaoSecaoTubulacao resultados={resultados} parametros={parametros} />
+                <VisualizacaoSecaoTubulacao
+                  resultados={resultados}
+                  parametros={parametros}
+                  actions={
+                    <div className="flex flex-wrap justify-end gap-2">
+                      <button
+                        type="button"
+                        onClick={handleAtingirMeta}
+                        className="inline-flex items-center gap-1.5 text-[11px] font-semibold transition-colors"
+                        style={{
+                          padding: '4px 10px',
+                          borderRadius: '3px',
+                          background: 'transparent',
+                          color: COLORS.sageDark,
+                          border: `1px solid ${COLORS.sageDark}`,
+                        }}
+                        onMouseEnter={(e) => (e.currentTarget.style.background = COLORS.sageTint)}
+                        onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
+                      >
+                        <Target className="w-3 h-3" strokeWidth={2} />
+                        {t('table.actions.reachMax')}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleAdicionarAtual}
+                        className="inline-flex items-center gap-1.5 text-[11px] font-semibold transition-colors"
+                        style={{
+                          padding: '4px 10px',
+                          borderRadius: '3px',
+                          background: 'transparent',
+                          color: COLORS.sageDark,
+                          border: `1px solid ${COLORS.sageDark}`,
+                        }}
+                        onMouseEnter={(e) => (e.currentTarget.style.background = COLORS.sageTint)}
+                        onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
+                      >
+                        <Plus className="w-3 h-3" strokeWidth={2} />
+                        {t('table.actions.addCurrent')}
+                      </button>
+                    </div>
+                  }
+                />
               </div>
               <div className="xl:col-span-5">
                 <VisualizacaoPerfilRede resultados={resultados} parametros={parametros} />
@@ -532,6 +655,144 @@ function App() {
               )}
             </SectionCard>
           </div>
+        </div>
+
+        {/* Tabela de Capacidades */}
+        <div className="mt-6 xl:mt-8">
+          <SectionCard
+            title={t('table.title')}
+            description={t('table.description')}
+            stamp="y/D ≤ LÂMINA MÁX"
+          >
+            {tabela.length === 0 ? (
+              <p className="text-sm py-6 text-center" style={{ color: COLORS.ink4 }}>
+                {t('table.empty')}
+              </p>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr style={{ borderBottom: `1px solid ${COLORS.line}` }}>
+                      <th
+                        className="font-mono text-[10px] font-bold tracking-[0.15em] uppercase text-left py-2 pr-4"
+                        style={{ color: COLORS.sageDark }}
+                      >
+                        {t('table.headers.dn')} <span style={{ color: COLORS.ink4 }}>(mm)</span>
+                      </th>
+                      <th
+                        className="font-mono text-[10px] font-bold tracking-[0.15em] uppercase text-left py-2 pr-4"
+                        style={{ color: COLORS.sageDark }}
+                      >
+                        {t('table.headers.slope')} <span style={{ color: COLORS.ink4 }}>(m/m)</span>
+                      </th>
+                      <th
+                        className="font-mono text-[10px] font-bold tracking-[0.15em] uppercase text-right py-2 pr-4"
+                        style={{ color: COLORS.sageDark }}
+                      >
+                        {t('table.headers.residences')}
+                      </th>
+                      <th
+                        className="font-mono text-[10px] font-bold tracking-[0.15em] uppercase text-right py-2 pr-4"
+                        style={{ color: COLORS.sageDark }}
+                      >
+                        {t('table.headers.population')}
+                      </th>
+                      <th
+                        className="font-mono text-[10px] font-bold tracking-[0.15em] uppercase text-right py-2 pr-4"
+                        style={{ color: COLORS.sageDark }}
+                      >
+                        {t('table.headers.flow')} <span style={{ color: COLORS.ink4 }}>(l/s)</span>
+                      </th>
+                      <th className="w-8 py-2" aria-label={t('table.headers.remove')}></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {tabela.map((r) => (
+                      <tr key={r.id} style={{ borderBottom: `1px solid ${COLORS.line}` }}>
+                        <td className="py-2.5 pr-4 font-mono font-semibold" style={{ color: COLORS.ink1 }}>
+                          {r.diametro}
+                        </td>
+                        <td className="py-2.5 pr-4 font-mono" style={{ color: COLORS.ink1 }}>
+                          {r.declividade.toFixed(4)}
+                        </td>
+                        <td className="py-2.5 pr-4 font-mono text-right" style={{ color: COLORS.ink1 }}>
+                          {r.residencias}
+                        </td>
+                        <td className="py-2.5 pr-4 font-mono text-right" style={{ color: COLORS.ink1 }}>
+                          {r.populacao.toFixed(2)}
+                        </td>
+                        <td className="py-2.5 pr-4 font-mono text-right" style={{ color: COLORS.ink1 }}>
+                          {r.vazao.toFixed(2)}
+                        </td>
+                        <td className="py-2.5 text-right">
+                          <button
+                            type="button"
+                            onClick={() => handleRemoverLinha(r.id)}
+                            aria-label={t('table.headers.remove')}
+                            className="inline-flex items-center justify-center transition-colors"
+                            style={{ width: 22, height: 22, borderRadius: 2, color: COLORS.ink4 }}
+                            onMouseEnter={(e) => {
+                              e.currentTarget.style.color = COLORS.err
+                              e.currentTarget.style.background = COLORS.errBg
+                            }}
+                            onMouseLeave={(e) => {
+                              e.currentTarget.style.color = COLORS.ink4
+                              e.currentTarget.style.background = 'transparent'
+                            }}
+                          >
+                            <X className="w-3.5 h-3.5" strokeWidth={2} />
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+
+                <div className="mt-5 flex flex-wrap justify-end gap-2">
+                  <button
+                    type="button"
+                    onClick={handleCopiarTSV}
+                    className="inline-flex items-center gap-1.5 text-xs font-semibold transition-colors"
+                    style={{
+                      padding: '6px 12px',
+                      borderRadius: '3px',
+                      background: 'transparent',
+                      color: COLORS.sageDark,
+                      border: `1px solid ${COLORS.sageDark}`,
+                    }}
+                    onMouseEnter={(e) => (e.currentTarget.style.background = COLORS.sageTint)}
+                    onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
+                  >
+                    <Copy className="w-3.5 h-3.5" strokeWidth={2} />
+                    {copiedFlash ? t('table.actions.copied') : t('table.actions.copy')}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleLimparTabela}
+                    className="inline-flex items-center gap-1.5 text-xs font-semibold transition-colors"
+                    style={{
+                      padding: '6px 12px',
+                      borderRadius: '3px',
+                      background: 'transparent',
+                      color: COLORS.ink3,
+                      border: `1px solid rgba(15,27,42,0.16)`,
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.color = COLORS.err
+                      e.currentTarget.style.borderColor = 'rgba(192,51,77,0.35)'
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.color = COLORS.ink3
+                      e.currentTarget.style.borderColor = 'rgba(15,27,42,0.16)'
+                    }}
+                  >
+                    <Trash2 className="w-3.5 h-3.5" strokeWidth={2} />
+                    {t('table.actions.clear')}
+                  </button>
+                </div>
+              </div>
+            )}
+          </SectionCard>
         </div>
 
         {/* Footer */}

@@ -274,6 +274,44 @@ export class CalculosHidraulicos {
     }
 
     /**
+     * Encontra a quantidade máxima de residências (inteiro) que mantém
+     * y/D ≤ laminaMaxima sem transbordamento.
+     * @param {Object} params - Parâmetros de entrada
+     * @returns {Object|null} { residencias, populacao, vazao, laminaAtingida } ou null se inviável
+     */
+    encontrarCapacidade(params) {
+        const parametros = { ...this.parametrosPadrao, ...params };
+        const target = parametros.laminaMaxima;
+
+        // Verifica se mesmo com 1 residência o tubo já transborda ou excede
+        const r1 = this.calcularTodos({ ...parametros, qtdeResidencias: 1 });
+        if (r1.verificacoes.transbordando || r1.resultados.laminaLiquida > target) {
+            return null;
+        }
+
+        // Bisseção para achar o maior N inteiro dentro do limite
+        let lo = 1;
+        let hi = 1000000;
+        while (lo < hi) {
+            const mid = Math.floor((lo + hi + 1) / 2);
+            const r = this.calcularTodos({ ...parametros, qtdeResidencias: mid });
+            if (!r.verificacoes.transbordando && r.resultados.laminaLiquida <= target) {
+                lo = mid;
+            } else {
+                hi = mid - 1;
+            }
+        }
+
+        const final = this.calcularTodos({ ...parametros, qtdeResidencias: lo });
+        return {
+            residencias: lo,
+            populacao: lo * parametros.taxaOcupacao,
+            vazao: final.resultados.vazaoCalculada,
+            laminaAtingida: final.resultados.laminaLiquida,
+        };
+    }
+
+    /**
      * Valida se os parâmetros estão dentro de faixas aceitáveis
      * @param {Object} params - Parâmetros a validar
      * @returns {Object} Objeto com validações
