@@ -4,6 +4,7 @@
     "subtitle": "Redes de Esgoto"
   },
   "parameters": {
+    "eyebrow": "ENTRADA",
     "title": "Parâmetros de Entrada",
     "description": "Configure os parâmetros para o cálculo hidráulico",
     "consumption": {
@@ -29,8 +30,10 @@
     }
   },
   "results": {
+    "eyebrow": "RESULTADOS",
     "title": "Resultados dos Cálculos",
     "description": "Valores calculados baseados nos parâmetros informados",
+    "overflowNotice": "Vazão excede a capacidade da tubulação. Aumente o diâmetro para comportar a vazão de projeto.",
     "flows": {
       "title": "Vazões",
       "estimated": "Vazão calculada:",
@@ -58,6 +61,7 @@
   },
   "visualization": {
     "section": {
+      "eyebrow": "SEÇÃO",
       "title": "Seção da Tubulação",
       "description": "Visualização da área molhada",
       "wettedArea": "Área molhada",
@@ -65,9 +69,12 @@
       "diameter": "Diâmetro",
       "wettedHeight": "Altura molhada (y)",
       "depthLabel": "Lâmina:",
-      "exceedsCriteria": "Excede critério!"
+      "exceedsCriteria": "Excede critério!",
+      "overflowWarning": "Tubulação sem capacidade!",
+      "overflowArea": "Tubo cheio"
     },
     "profile": {
+      "eyebrow": "PERFIL",
       "title": "Perfil da Rede",
       "description": "Vista longitudinal com declividade",
       "ground": "Superfície do terreno",
@@ -80,6 +87,7 @@
       "referenceLevel": "Nível de referência",
       "normalFlow": "Fluxo Normal - Autolimpeza OK",
       "sedimentationRisk": "Risco de Sedimentação",
+      "overflowRisk": "Tubulação sem capacidade para a vazão",
       "wastewater": "Água Residual",
       "pipe": "Tubulação",
       "flowDirection": "Direção do fluxo",
@@ -89,13 +97,25 @@
       "minimum": "Mínimo",
       "velocity": "Velocidade",
       "warning": "Atenção",
-      "warningMessage": "Força trativa insuficiente pode causar acúmulo de sedimentos e obstrução da rede."
+      "warningMessage": "Força trativa insuficiente pode causar acúmulo de sedimentos e obstrução da rede.",
+      "overflowMessage": "A vazão de projeto excede a capacidade da tubulação. Aumente o diâmetro ou a declividade."
     }
   },
   "status": {
     "title": "Condições de escoamento",
     "ok": "Sistema OK",
-    "problem": "Problema nas condições de escoamento"
+    "okDesc": "Todas as verificações hidráulicas atendidas",
+    "problem": "Problema nas condições de escoamento",
+    "problemDesc": "Uma ou mais verificações fora dos critérios",
+    "overflow": "Tubulação sem capacidade",
+    "overflowDesc": "A vazão de projeto excede a capacidade da tubulação"
+  },
+  "footer": {
+    "copyleft": "Copyleft © 2025 Pery Nazareth & Leonardo Nazareth. Este material pode ser livremente reproduzido e distribuído para fins educacionais, desde que a autoria seja atribuída.",
+    "disclaimer": "Os autores não se responsabilizam pelo uso indevido das informações ou resultados gerados por este simulador. Os cálculos apresentados têm finalidade didática e não substituem a análise de um profissional habilitado."
+  },
+  "header": {
+    "authors": "por Pery Nazareth & Leonardo Nazareth"
   },
   "language": {
     "label": "Idioma",

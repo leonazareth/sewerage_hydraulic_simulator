@@ -4,6 +4,7 @@
     "subtitle": "Redes de Alcantarillado"
   },
   "parameters": {
+    "eyebrow": "ENTRADA",
     "title": "Parámetros de Entrada",
     "description": "Configure los parámetros para el cálculo hidráulico",
     "consumption": {
@@ -29,8 +30,10 @@
     }
   },
   "results": {
+    "eyebrow": "RESULTADOS",
     "title": "Resultados de los Cálculos",
     "description": "Valores calculados basados en los parámetros informados",
+    "overflowNotice": "El caudal excede la capacidad de la tubería. Aumente el diámetro para acomodar el caudal de diseño.",
     "flows": {
       "title": "Caudales",
       "estimated": "Caudal calculado:",
@@ -58,6 +61,7 @@
   },
   "visualization": {
     "section": {
+      "eyebrow": "SECCIÓN",
       "title": "Sección de la Tubería",
       "description": "Visualización del área mojada",
       "wettedArea": "Área mojada",
@@ -65,9 +69,12 @@
       "diameter": "Diámetro",
       "wettedHeight": "Altura mojada (y)",
       "depthLabel": "Tirante:",
-      "exceedsCriteria": "¡Excede criterio!"
+      "exceedsCriteria": "¡Excede criterio!",
+      "overflowWarning": "¡Tubería sin capacidad!",
+      "overflowArea": "Tubo lleno"
     },
     "profile": {
+      "eyebrow": "PERFIL",
       "title": "Perfil de la Red",
       "description": "Vista longitudinal con pendiente",
       "ground": "Superficie del terreno",
@@ -80,6 +87,7 @@
       "referenceLevel": "Nivel de referencia",
       "normalFlow": "Flujo Normal - Autolimpieza OK",
       "sedimentationRisk": "Riesgo de Sedimentación",
+      "overflowRisk": "Tubería insuficiente para el caudal de diseño",
       "wastewater": "Aguas residuales",
       "pipe": "Tubería",
       "flowDirection": "Dirección del flujo",
@@ -89,13 +97,25 @@
       "minimum": "Mínimo",
       "velocity": "Velocidad",
       "warning": "Atención",
-      "warningMessage": "Fuerza tractiva insuficiente puede causar acumulación de sedimentos y obstrucción de la red."
+      "warningMessage": "Fuerza tractiva insuficiente puede causar acumulación de sedimentos y obstrucción de la red.",
+      "overflowMessage": "El caudal de diseño excede la capacidad de la tubería. Aumente el diámetro o la pendiente."
     }
   },
   "status": {
     "title": "Condiciones de escurrimiento",
     "ok": "Sistema OK",
-    "problem": "Problema en las condiciones de escurrimiento"
+    "okDesc": "Todas las verificaciones hidráulicas atendidas",
+    "problem": "Problema en las condiciones de escurrimiento",
+    "problemDesc": "Una o más verificaciones fuera de los criterios",
+    "overflow": "Tubería sin capacidad",
+    "overflowDesc": "El caudal de diseño excede la capacidad de la tubería"
+  },
+  "footer": {
+    "copyleft": "Copyleft © 2025 Pery Nazareth & Leonardo Nazareth. Este material puede ser reproducido y distribuido libremente con fines educativos, siempre que se atribuya la autoría.",
+    "disclaimer": "Los autores no se responsabilizan por el uso indebido de la información o los resultados generados por este simulador. Los cálculos presentados tienen finalidad didáctica y no sustituyen el análisis de un profesional habilitado."
+  },
+  "header": {
+    "authors": "por Pery Nazareth & Leonardo Nazareth"
   },
   "language": {
     "label": "Idioma",

@@ -1,71 +1,79 @@
 import React from 'react'
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { useLanguage } from "@/i18n/LanguageProvider";
+
+const COLORS = {
+  white: '#FFFFFF',
+  sageDark: '#2F5C44',
+  ink1: '#0F1B2A',
+  ink2: '#2C3E50',
+  ink3: '#5C6B7A',
+  ink4: '#94A3B0',
+  line: 'rgba(15,27,42,0.10)',
+  err: '#C0334D',
+  errBg: '#FDEDF2',
+}
 
 const VisualizacaoSecaoTubulacao = ({ resultados, parametros }) => {
   const { t } = useLanguage();
-  
+
   if (!resultados) return null
 
   const { laminaLiquida, forcaTraativa } = resultados.resultados
   const { diametro, laminaMaxima, forcaTrativaMin } = parametros
-  
-  // Verificar se há risco de sedimentação
-  const temSedimentacao = forcaTraativa < forcaTrativaMin
+  const transbordando = resultados.verificacoes.transbordando
 
-  // Configurações do SVG
-  const svgSize = 300
-  const center = svgSize / 2
-  const radius = 120
-  
+  // Verificar se há risco de sedimentação
+  const temSedimentacao = !transbordando && forcaTraativa < forcaTrativaMin
+
+  // Configurações do SVG (canvas dimensionado para acomodar anotações externas)
+  const svgWidth = 420
+  const svgHeight = 320
+  const cx = 150
+  const cy = svgHeight / 2
+  const radius = 105
+
   // Verificar se lâmina excede critério
   const laminaExcedeCriterio = laminaLiquida > laminaMaxima
-  
+
   // Calcular a altura da água baseada na lâmina líquida
-  // A água preenche de baixo para cima
-  const alturaAguaRelativa = laminaLiquida // fração do diâmetro
-  
+  // Cap at 1.0 for visualization (pipe can't show more than full)
+  const alturaAguaRelativa = Math.min(laminaLiquida, 1)
+
+  // Status para a cor do badge de lâmina
+  const laminaStatus = (transbordando || laminaExcedeCriterio)
+    ? { fg: COLORS.err, bg: COLORS.errBg, border: 'rgba(192,51,77,0.3)' }
+    : { fg: '#1E4D6B', bg: '#E8F0F5', border: 'rgba(30,77,107,0.25)' }
+
   // Função para criar o path da área molhada (preenchimento de baixo para cima)
   const criarPathAreaMolhada = () => {
     if (alturaAguaRelativa <= 0) return ""
     if (alturaAguaRelativa >= 1) {
-      // Tubulação completamente cheia
-      return `M ${center} ${center} m -${radius} 0 a ${radius} ${radius} 0 1 1 ${radius * 2} 0 a ${radius} ${radius} 0 1 1 -${radius * 2} 0`
+      return `M ${cx} ${cy} m -${radius} 0 a ${radius} ${radius} 0 1 1 ${radius * 2} 0 a ${radius} ${radius} 0 1 1 -${radius * 2} 0`
     }
-    
-    // Calcular a altura da água em pixels
     const alturaAguaPixels = alturaAguaRelativa * (radius * 2)
-    const ySuperficie = center + radius - alturaAguaPixels
-    
-    // Calcular os pontos onde a superfície da água intersecta o círculo
-    const h = radius - alturaAguaPixels // distância do centro até a superfície
-    const w = Math.sqrt(radius * radius - h * h) // meia largura da superfície
-    
-    const x1 = center - w
-    const x2 = center + w
+    const ySuperficie = cy + radius - alturaAguaPixels
+    const h = radius - alturaAguaPixels
+    const w = Math.sqrt(radius * radius - h * h)
+    const x1 = cx - w
+    const x2 = cx + w
     const y = ySuperficie
-    
-    // Criar o path: arco da parte inferior + linha reta da superfície
     const largeArcFlag = alturaAguaRelativa > 0.5 ? 1 : 0
-    
     return `M ${x1} ${y} A ${radius} ${radius} 0 ${largeArcFlag} 0 ${x2} ${y} Z`
   }
 
   // Calcular posição Y da superfície da água
   const calcularSuperficieAgua = () => {
-    if (alturaAguaRelativa <= 0) return center + radius
-    if (alturaAguaRelativa >= 1) return center - radius
-    
+    if (alturaAguaRelativa <= 0) return cy + radius
+    if (alturaAguaRelativa >= 1) return cy - radius
     const alturaAguaPixels = alturaAguaRelativa * (radius * 2)
-    return center + radius - alturaAguaPixels
+    return cy + radius - alturaAguaPixels
   }
 
   const superficieY = calcularSuperficieAgua()
-  
+
   // Calcular largura da superfície da água
   const calcularLarguraSuperficie = () => {
     if (alturaAguaRelativa <= 0 || alturaAguaRelativa >= 1) return 0
-    
     const h = radius - (alturaAguaRelativa * radius * 2)
     const w = Math.sqrt(radius * radius - h * h)
     return w * 2
@@ -74,219 +82,408 @@ const VisualizacaoSecaoTubulacao = ({ resultados, parametros }) => {
   const larguraSuperficie = calcularLarguraSuperficie()
 
   return (
-    <Card className="shadow-md border-gray-200">
-      <CardHeader style={{ backgroundColor: '#0c4688', borderTopLeftRadius: '0.5rem', borderTopRightRadius: '0.5rem' }}>
-        <CardTitle className="text-white">{t('visualization.section.title')}</CardTitle>
-        <CardDescription className="text-gray-200">{t('visualization.section.description')}</CardDescription>
-      </CardHeader>
-      <CardContent className="pt-6">
-        <div className="flex justify-center">
-          <svg width={svgSize} height={svgSize} className="border border-gray-200 rounded">
-            {/* Círculo da tubulação */}
-            <circle
-              cx={center}
-              cy={center}
-              r={radius}
-              fill="none"
-              stroke="#374151"
-              strokeWidth="3"
+    <section
+      className="relative flex flex-col h-full"
+      style={{
+        background: COLORS.white,
+        border: `1px solid ${COLORS.line}`,
+        borderRadius: '4px',
+        padding: '24px 28px',
+      }}
+    >
+      <span
+        aria-hidden="true"
+        className="absolute"
+        style={{ top: 0, left: 24, width: 28, height: 3, background: '#5C8A6E' }}
+      />
+      <header className="mb-5 pb-3" style={{ borderBottom: `1px solid ${COLORS.line}` }}>
+        <h2
+          className="font-mono text-sm font-extrabold tracking-[0.14em] uppercase"
+          style={{ color: COLORS.sageDark }}
+        >
+          {t('visualization.section.title')}
+        </h2>
+        <p className="text-xs mt-1.5" style={{ color: COLORS.ink3 }}>{t('visualization.section.description')}</p>
+      </header>
+      <div className="flex-1 flex flex-col">
+        <div className="w-full">
+          <svg
+            viewBox={`0 0 ${svgWidth} ${svgHeight}`}
+            preserveAspectRatio="xMidYMid meet"
+            className="w-full h-auto"
+            style={{ maxHeight: '360px' }}
+          >
+            <defs>
+              <marker id="arrowhead" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+                <polygon points="0 0, 8 3, 0 6" fill={COLORS.ink2} />
+              </marker>
+              <marker id="arrowhead-rev" markerWidth="8" markerHeight="6" refX="1" refY="3" orient="auto">
+                <polygon points="8 0, 0 3, 8 6" fill={COLORS.ink2} />
+              </marker>
+              <marker id="dot" markerWidth="6" markerHeight="6" refX="3" refY="3">
+                <circle cx="3" cy="3" r="2" fill={COLORS.ink2} />
+              </marker>
+              <pattern id="gridSecao" width="20" height="20" patternUnits="userSpaceOnUse">
+                <path d="M 20 0 L 0 0 0 20" fill="none" stroke="rgba(15,27,42,0.10)" strokeWidth="0.5" />
+              </pattern>
+            </defs>
+
+            {/* Grid de papel milimetrado (sutil) */}
+            <rect x="0" y="0" width={svgWidth} height={svgHeight} fill="url(#gridSecao)" />
+
+            {/* Régua de ticks no topo */}
+            <g stroke={COLORS.ink4} strokeWidth="0.5">
+              {Array.from({ length: 21 }, (_, i) => {
+                const x = (svgWidth / 20) * i
+                const isMajor = i % 5 === 0
+                return (
+                  <line
+                    key={`tick-t-${i}`}
+                    x1={x}
+                    y1={0}
+                    x2={x}
+                    y2={isMajor ? 5 : 2.5}
+                    opacity={isMajor ? 0.5 : 0.3}
+                  />
+                )
+              })}
+            </g>
+            {/* Régua de ticks na esquerda */}
+            <g stroke={COLORS.ink4} strokeWidth="0.5">
+              {Array.from({ length: 17 }, (_, i) => {
+                const y = (svgHeight / 16) * i
+                const isMajor = i % 4 === 0
+                return (
+                  <line
+                    key={`tick-l-${i}`}
+                    x1={0}
+                    y1={y}
+                    x2={isMajor ? 5 : 2.5}
+                    y2={y}
+                    opacity={isMajor ? 0.5 : 0.3}
+                  />
+                )
+              })}
+            </g>
+
+            {/* Centerline horizontal (referência D/2) */}
+            <line
+              x1={cx - radius - 4}
+              y1={cy}
+              x2={cx + radius + 4}
+              y2={cy}
+              stroke={COLORS.ink4}
+              strokeWidth="0.6"
+              strokeDasharray="2,3"
             />
-            
-            {/* Área molhada (água) - preenchimento de baixo para cima */}
+
+            {/* Círculo da tubulação */}
+            <circle cx={cx} cy={cy} r={radius} fill="none" stroke={COLORS.ink2} strokeWidth="2.5" />
+
+            {/* Área molhada */}
             {alturaAguaRelativa > 0 && (
               <path
                 d={criarPathAreaMolhada()}
-                fill="#3B82F6"
-                fillOpacity="0.6"
-                stroke="#1D4ED8"
+                fill={transbordando ? "#EF4444" : "#3B82F6"}
+                fillOpacity="0.55"
+                stroke={transbordando ? "#B91C1C" : "#1D4ED8"}
                 strokeWidth="1"
               />
             )}
-            
-            {/* Linha da superfície da água */}
+
+            {/* Superfície da água (tracejada) */}
             {alturaAguaRelativa > 0 && alturaAguaRelativa < 1 && larguraSuperficie > 0 && (
               <line
-                x1={center - larguraSuperficie / 2}
+                x1={cx - larguraSuperficie / 2}
                 y1={superficieY}
-                x2={center + larguraSuperficie / 2}
+                x2={cx + larguraSuperficie / 2}
                 y2={superficieY}
                 stroke="#1D4ED8"
-                strokeWidth="2"
-                strokeDasharray="5,5"
+                strokeWidth="1.5"
+                strokeDasharray="4,3"
               />
             )}
-            
-            {/* Partículas de sedimento (se força trativa insuficiente) */}
+
+            {/* Partículas de sedimento */}
             {temSedimentacao && alturaAguaRelativa > 0 && (() => {
               const alturaAguaPixels = alturaAguaRelativa * (radius * 2);
-              const ySuperficie = center + radius - alturaAguaPixels;
-              
-              // Verificar se um ponto (x, y) está dentro da área molhada
+              const ySuperficie = cy + radius - alturaAguaPixels;
               const estaDentroAreaMolhada = (x, y) => {
-                // Verificar se está abaixo da superfície da água
                 if (y < ySuperficie) return false;
-                
-                // Verificar se está dentro do círculo
-                const dx = x - center;
-                const dy = y - center;
-                const distanciaDoCenter = Math.sqrt(dx * dx + dy * dy);
-                return distanciaDoCenter <= radius;
+                const dx = x - cx;
+                const dy = y - cy;
+                return Math.sqrt(dx * dx + dy * dy) <= radius;
               };
-              
-              // Lista de sedimentos com suas posições
               const sedimentos = [
-                { x: center, y: center + radius - 3, r: 2.5 },
-                { x: center - 7, y: center + radius - 4, r: 2 },
-                { x: center + 4, y: center + radius - 3.5, r: 2 },
-                { x: center - 3, y: center + radius - 6, r: 1.8 },
-                { x: center + 6, y: center + radius - 5, r: 1.5 },
-                { x: center - 10, y: center + radius - 5, r: 1.5 },
-                { x: center + 9, y: center + radius - 7, r: 1.3 },
-                { x: center - 5, y: center + radius - 8, r: 1.5 },
-                { x: center + 2, y: center + radius - 9, r: 1.2 },
-                { x: center - 8, y: center + radius - 7, r: 1.4 },
-                { x: center + 11, y: center + radius - 6, r: 1.3 },
-                { x: center - 2, y: center + radius - 10, r: 1 },
+                { x: cx, y: cy + radius - 3, r: 2.5 },
+                { x: cx - 7, y: cy + radius - 4, r: 2 },
+                { x: cx + 4, y: cy + radius - 3.5, r: 2 },
+                { x: cx - 3, y: cy + radius - 6, r: 1.8 },
+                { x: cx + 6, y: cy + radius - 5, r: 1.5 },
+                { x: cx - 10, y: cy + radius - 5, r: 1.5 },
+                { x: cx + 9, y: cy + radius - 7, r: 1.3 },
+                { x: cx - 5, y: cy + radius - 8, r: 1.5 },
+                { x: cx + 2, y: cy + radius - 9, r: 1.2 },
+                { x: cx - 8, y: cy + radius - 7, r: 1.4 },
+                { x: cx + 11, y: cy + radius - 6, r: 1.3 },
+                { x: cx - 2, y: cy + radius - 10, r: 1 },
               ];
-              
-              // Sedimentos adicionais se houver água suficiente
               if (alturaAguaRelativa > 0.15) {
-                sedimentos.push(
-                  { x: center - 15, y: center + radius - 10, r: 1.2 },
-                  { x: center + 13, y: center + radius - 11, r: 1 }
-                );
+                sedimentos.push({ x: cx - 15, y: cy + radius - 10, r: 1.2 }, { x: cx + 13, y: cy + radius - 11, r: 1 });
               }
-              
               if (alturaAguaRelativa > 0.2) {
-                sedimentos.push(
-                  { x: center - 18, y: center + radius - 13, r: 1 },
-                  { x: center + 16, y: center + radius - 14, r: 0.9 },
-                  { x: center - 12, y: center + radius - 12, r: 1.1 }
-                );
+                sedimentos.push({ x: cx - 18, y: cy + radius - 13, r: 1 }, { x: cx + 16, y: cy + radius - 14, r: 0.9 }, { x: cx - 12, y: cy + radius - 12, r: 1.1 });
               }
-              
-              // Renderizar apenas sedimentos que estão dentro da área molhada
               return (
                 <>
-                  {sedimentos.map((sed, idx) => 
+                  {sedimentos.map((sed, idx) =>
                     estaDentroAreaMolhada(sed.x, sed.y) && (
-                      <circle 
-                        key={idx}
-                        cx={sed.x} 
-                        cy={sed.y} 
-                        r={sed.r} 
-                        fill="#8B5CF6" 
-                      />
+                      <circle key={idx} cx={sed.x} cy={sed.y} r={sed.r} fill="#8B5CF6" />
                     )
                   )}
                 </>
               );
             })()}
-            
-            {/* Linha do diâmetro */}
+
+            {/* ─── ANOTAÇÃO DE DIÂMETRO (top) ─────────────────────── */}
+            {/* Extension lines (pequenas linhas verticais nas bordas) */}
+            <line x1={cx - radius} y1={cy - radius - 4} x2={cx - radius} y2={cy - radius - 22} stroke={COLORS.ink4} strokeWidth="0.6" />
+            <line x1={cx + radius} y1={cy - radius - 4} x2={cx + radius} y2={cy - radius - 22} stroke={COLORS.ink4} strokeWidth="0.6" />
+            {/* Linha de cota com setas */}
             <line
-              x1={center - radius}
-              y1={center}
-              x2={center + radius}
-              y2={center}
-              stroke="#6B7280"
+              x1={cx - radius}
+              y1={cy - radius - 14}
+              x2={cx + radius}
+              y2={cy - radius - 14}
+              stroke={COLORS.ink2}
               strokeWidth="1"
-              strokeDasharray="3,3"
+              markerStart="url(#arrowhead-rev)"
+              markerEnd="url(#arrowhead)"
             />
-            
-            {/* Linha da altura molhada */}
-            {alturaAguaRelativa > 0 && (
-              <line
-                x1={center}
-                y1={center + radius}
-                x2={center}
-                y2={superficieY}
-                stroke="#EF4444"
-                strokeWidth="2"
-              />
-            )}
-            
-            {/* Setas e dimensões */}
-            {/* Diâmetro */}
-            <g>
-              <text
-                x={center}
-                y={center - radius - 15}
-                textAnchor="middle"
-                className="text-sm font-medium fill-gray-700"
-              >
-                Ø {diametro} mm
-              </text>
-              <line
-                x1={center - radius - 10}
-                y1={center - radius - 5}
-                x2={center + radius + 10}
-                y2={center - radius - 5}
-                stroke="#374151"
-                strokeWidth="1"
-                markerEnd="url(#arrowhead)"
-                markerStart="url(#arrowhead)"
-              />
-            </g>
-            
-            {/* Altura molhada */}
-            {alturaAguaRelativa > 0 && (
+            {/* Badge do diâmetro acima da linha de cota */}
+            <rect
+              x={cx - 38}
+              y={cy - radius - 42}
+              width="76"
+              height="20"
+              rx="3"
+              fill={COLORS.white}
+              stroke={COLORS.line}
+              strokeWidth="0.6"
+            />
+            <text
+              x={cx}
+              y={cy - radius - 28}
+              textAnchor="middle"
+              fontFamily='"JetBrains Mono", monospace'
+              fontSize="11"
+              fontWeight="600"
+              fill={COLORS.ink1}
+            >
+              Ø {diametro} mm
+            </text>
+
+            {/* ─── ANOTAÇÃO DE LÂMINA (y) — dimension externa + badge ─── */}
+            {alturaAguaRelativa > 0 && !transbordando && (() => {
+              const dimX = cx + radius + 24       // posição do eixo da cota vertical (fora do tubo)
+              const yMid = (cy + radius + superficieY) / 2
+              const badgeX = dimX + 14
+              const badgeY = yMid - 18
+              const badgeW = 78
+              const badgeH = 36
+              return (
+                <g>
+                  {/* Extension line — superfície da água */}
+                  <line
+                    x1={cx + (larguraSuperficie / 2)}
+                    y1={superficieY}
+                    x2={dimX + 6}
+                    y2={superficieY}
+                    stroke={COLORS.ink4}
+                    strokeWidth="0.6"
+                  />
+                  {/* Extension line — fundo do tubo */}
+                  <line
+                    x1={cx}
+                    y1={cy + radius}
+                    x2={dimX + 6}
+                    y2={cy + radius}
+                    stroke={COLORS.ink4}
+                    strokeWidth="0.6"
+                  />
+                  {/* Linha de cota vertical com setas (fora do tubo) */}
+                  <line
+                    x1={dimX}
+                    y1={cy + radius}
+                    x2={dimX}
+                    y2={superficieY}
+                    stroke={laminaStatus.fg}
+                    strokeWidth="1.2"
+                    markerStart="url(#arrowhead-rev)"
+                    markerEnd="url(#arrowhead)"
+                  />
+                  {/* Badge com y/D + percentagem */}
+                  <rect
+                    x={badgeX}
+                    y={badgeY}
+                    width={badgeW}
+                    height={badgeH}
+                    rx="3"
+                    fill={laminaStatus.bg}
+                    stroke={laminaStatus.border}
+                    strokeWidth="1"
+                  />
+                  <text
+                    x={badgeX + badgeW / 2}
+                    y={badgeY + 13}
+                    textAnchor="middle"
+                    fontFamily='"JetBrains Mono", monospace'
+                    fontSize="9"
+                    fontWeight="700"
+                    letterSpacing="1"
+                    fill={laminaStatus.fg}
+                    opacity="0.75"
+                  >
+                    y/D
+                  </text>
+                  <text
+                    x={badgeX + badgeW / 2}
+                    y={badgeY + 28}
+                    textAnchor="middle"
+                    fontFamily='"JetBrains Mono", monospace'
+                    fontSize="14"
+                    fontWeight="700"
+                    fill={laminaStatus.fg}
+                  >
+                    {(laminaLiquida * 100).toFixed(1)}%
+                  </text>
+                </g>
+              )
+            })()}
+
+            {/* Quando transbordando — anotação especial */}
+            {transbordando && (
               <g>
+                <rect
+                  x={cx + radius + 15}
+                  y={cy - 22}
+                  width="100"
+                  height="44"
+                  rx="6"
+                  fill={COLORS.errBg}
+                  stroke="rgba(192,51,77,0.3)"
+                  strokeWidth="1"
+                />
                 <text
-                  x={center + 10}
-                  y={(center + radius + superficieY) / 2}
-                  textAnchor="start"
-                  className={`text-sm font-medium ${laminaExcedeCriterio ? 'fill-red-600' : 'fill-blue-600'}`}
+                  x={cx + radius + 65}
+                  y={cy - 5}
+                  textAnchor="middle"
+                  fontFamily='"JetBrains Mono", monospace'
+                  fontSize="9"
+                  fontWeight="700"
+                  letterSpacing="1"
+                  fill={COLORS.err}
+                  opacity="0.75"
                 >
-                  y
+                  y / Ø
+                </text>
+                <text
+                  x={cx + radius + 65}
+                  y={cy + 12}
+                  textAnchor="middle"
+                  fontFamily='"JetBrains Mono", monospace'
+                  fontSize="15"
+                  fontWeight="700"
+                  fill={COLORS.err}
+                >
+                  {(laminaLiquida * 100).toFixed(1)}%
                 </text>
               </g>
             )}
-            
-            {/* Definir marcadores de seta */}
-            <defs>
-              <marker
-                id="arrowhead"
-                markerWidth="10"
-                markerHeight="7"
-                refX="9"
-                refY="3.5"
-                orient="auto"
-              >
-                <polygon
-                  points="0 0, 10 3.5, 0 7"
-                  fill="#374151"
-                />
-              </marker>
-            </defs>
+
+            {/* Tick "Ø" embaixo (referência da base) */}
+            <line x1={cx - 3} y1={cy + radius} x2={cx + 3} y2={cy + radius} stroke={COLORS.ink3} strokeWidth="1" />
+
+            {/* FIG caption + title block (canto inferior direito) */}
+            <line x1={20} y1={svgHeight - 24} x2={svgWidth - 20} y2={svgHeight - 24} stroke={COLORS.ink4} strokeWidth="0.5" opacity="0.4" />
+            <text
+              x={20}
+              y={svgHeight - 10}
+              fontFamily='"JetBrains Mono", monospace'
+              fontSize="9"
+              fontWeight="700"
+              letterSpacing="1.2"
+              fill={COLORS.ink2}
+            >
+              FIG. 01 · SEÇÃO TRANSVERSAL
+            </text>
+            <text
+              x={svgWidth - 20}
+              y={svgHeight - 10}
+              textAnchor="end"
+              fontFamily='"JetBrains Mono", monospace'
+              fontSize="9"
+              fontWeight="500"
+              fill={COLORS.ink4}
+              letterSpacing="0.5"
+            >
+              D = {diametro}mm
+            </text>
           </svg>
         </div>
         
-        {/* Legenda */}
-        <div className="mt-4 grid grid-cols-2 gap-4 text-sm">
+        {/* Legenda — empurrada para baixo */}
+        <div className="mt-auto pt-4 flex flex-wrap gap-x-5 gap-y-2 text-xs" style={{ color: COLORS.ink3 }}>
           <div className="flex items-center gap-2">
-            <div className="w-4 h-4 bg-blue-500 bg-opacity-60 border border-blue-700 rounded"></div>
-            <span>{t('visualization.section.wettedArea')}</span>
+            <div
+              className="w-3 h-3 rounded-sm"
+              style={{
+                background: transbordando ? '#EF4444' : '#3B82F6',
+                opacity: 0.55,
+                border: `1px solid ${transbordando ? '#B91C1C' : '#1D4ED8'}`,
+              }}
+            ></div>
+            <span>{transbordando ? t('visualization.section.overflowArea') : t('visualization.section.wettedArea')}</span>
           </div>
-          <div className="flex items-center gap-2">
-            <div className="w-4 h-1 bg-red-500"></div>
-            <span>{t('visualization.section.wettedHeight')}</span>
-          </div>
-        </div>
-        
-        {/* Informações simplificadas */}
-        <div className="mt-4 p-3 bg-gray-50 rounded text-sm border border-gray-200">
-          <div className="flex justify-center">
-            <div className={`font-medium ${laminaExcedeCriterio ? 'text-red-600' : 'text-gray-700'}`}>
-              {t('visualization.section.depthLabel')} {(laminaLiquida * 100).toFixed(1)}%
-              {laminaExcedeCriterio && (
-                <span className="ml-2 text-red-600 font-bold">⚠ {t('visualization.section.exceedsCriteria')}</span>
-              )}
+          {!transbordando && (
+            <div className="flex items-center gap-2">
+              <svg width="16" height="2"><line x1="0" y1="1" x2="16" y2="1" stroke="#1D4ED8" strokeWidth="1.5" strokeDasharray="3,2" /></svg>
+              <span>{t('visualization.section.waterSurface')}</span>
             </div>
-          </div>
+          )}
         </div>
-      </CardContent>
-    </Card>
+
+        {/* Status alert quando transbordando ou excede critério */}
+        {transbordando && (
+          <div
+            className="mt-4 flex items-center justify-center text-sm font-bold"
+            style={{
+              padding: '10px 14px',
+              borderRadius: '3px',
+              background: COLORS.errBg,
+              border: `1px solid rgba(192,51,77,0.25)`,
+              color: COLORS.err,
+            }}
+          >
+            ⚠ {t('visualization.section.overflowWarning')}
+          </div>
+        )}
+        {!transbordando && laminaExcedeCriterio && (
+          <div
+            className="mt-4 flex items-center justify-center text-sm font-semibold"
+            style={{
+              padding: '10px 14px',
+              borderRadius: '3px',
+              background: COLORS.errBg,
+              border: `1px solid rgba(192,51,77,0.25)`,
+              color: COLORS.err,
+            }}
+          >
+            ⚠ {t('visualization.section.exceedsCriteria')}
+          </div>
+        )}
+      </div>
+    </section>
   )
 }
 

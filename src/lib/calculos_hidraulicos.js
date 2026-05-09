@@ -6,7 +6,7 @@ export class CalculosHidraulicos {
     constructor() {
         // Valores padrão dos parâmetros
         this.parametrosPadrao = {
-            consumoPerCapita: 200,      // l/hab/dia
+            consumoPerCapita: 150,      // l/hab/dia
             taxaOcupacao: 5,            // hab/casa
             coefRetorno: 0.8,           // C
             k1: 1.2,                    // Coef. máximo diário
@@ -219,19 +219,34 @@ export class CalculosHidraulicos {
      */
     calcularTodos(params) {
         const parametros = { ...this.parametrosPadrao, ...params };
-        
+
         const vazaoEstimada = this.calcularVazaoEstimada(parametros);
         const vazaoCalculada = this.calcularVazaoCalculada(parametros);
         const anguloTeta = this.calcularAnguloTeta(parametros);
-        const areaHidraulica = this.calcularAreaHidraulica(parametros);
-        const perimetroMolhado = this.calcularPerimetroMolhado(parametros);
-        const raioHidraulico = this.calcularRaioHidraulico(parametros);
-        const alturaMolhada = this.calcularAlturaMolhada(parametros);
-        const laminaLiquida = this.calcularLaminaLiquida(parametros);
-        const forcaTraativa = this.calcularForcaTraativa(parametros);
-        const velocidade = this.calcularVelocidade(parametros);
 
-        // Verificações de critérios
+        const transbordando = anguloTeta >= 2 * Math.PI;
+
+        let areaHidraulica, perimetroMolhado, raioHidraulico, alturaMolhada, laminaLiquida, forcaTraativa, velocidade;
+
+        if (transbordando) {
+            const d = parametros.diametro / 1000;
+            areaHidraulica = Math.PI * Math.pow(d, 2) / 4;
+            perimetroMolhado = Math.PI * d;
+            raioHidraulico = d / 4;
+            alturaMolhada = d;
+            laminaLiquida = anguloTeta / (2 * Math.PI);
+            forcaTraativa = 1000 * raioHidraulico * parametros.declividade * 10;
+            velocidade = Math.pow(raioHidraulico, 2/3) * Math.pow(parametros.declividade, 0.5) / parametros.coefManning;
+        } else {
+            areaHidraulica = this.calcularAreaHidraulica(parametros);
+            perimetroMolhado = this.calcularPerimetroMolhado(parametros);
+            raioHidraulico = this.calcularRaioHidraulico(parametros);
+            alturaMolhada = this.calcularAlturaMolhada(parametros);
+            laminaLiquida = this.calcularLaminaLiquida(parametros);
+            forcaTraativa = this.calcularForcaTraativa(parametros);
+            velocidade = this.calcularVelocidade(parametros);
+        }
+
         const laminaOK = laminaLiquida <= parametros.laminaMaxima;
         const forcaTraativaOK = forcaTraativa >= parametros.forcaTrativaMin;
 
@@ -252,7 +267,8 @@ export class CalculosHidraulicos {
             verificacoes: {
                 laminaOK,
                 forcaTraativaOK,
-                sistemaOK: laminaOK && forcaTraativaOK
+                transbordando,
+                sistemaOK: laminaOK && forcaTraativaOK && !transbordando
             }
         };
     }

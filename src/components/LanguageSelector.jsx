@@ -1,10 +1,8 @@
 import { useLanguage } from '@/i18n/LanguageProvider';
-import { Button } from '@/components/ui/button';
-import { Globe } from 'lucide-react';
 
 const LanguageSelector = () => {
   const { language, setLanguage } = useLanguage();
-  
+
   const languages = [
     { code: 'pt', label: 'PT' },
     { code: 'en', label: 'EN' },
@@ -12,19 +10,27 @@ const LanguageSelector = () => {
   ];
 
   return (
-    <div className="flex items-center gap-2">
-      <Globe className="w-4 h-4 text-gray-600" />
-      {languages.map(lang => (
-        <Button
-          key={lang.code}
-          variant={language === lang.code ? 'default' : 'outline'}
-          size="sm"
-          onClick={() => setLanguage(lang.code)}
-          className="min-w-[50px]"
-        >
-          {lang.label}
-        </Button>
-      ))}
+    <div
+      className="inline-flex items-center rounded-full p-0.5"
+      style={{ background: '#FFFFFF', border: '1px solid rgba(15,27,42,0.10)' }}
+    >
+      {languages.map(lang => {
+        const active = language === lang.code;
+        return (
+          <button
+            key={lang.code}
+            onClick={() => setLanguage(lang.code)}
+            className="font-mono text-[11px] font-bold tracking-wider transition-colors rounded-full"
+            style={{
+              padding: '5px 12px',
+              background: active ? '#2F5C44' : 'transparent',
+              color: active ? '#FFFFFF' : '#5C6B7A',
+            }}
+          >
+            {lang.label}
+          </button>
+        );
+      })}
     </div>
   );
 };
